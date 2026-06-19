@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OMNITRIX // DNA ARCHIVE</title>
+<link rel="icon" type="image/png" href="./assets/watch.webp">
+<style>
+  :root{
+    --void:#05060a;
+    --line:rgba(255,255,255,0.08);
+    --txt:#cfd4dc;
+    --txt-dim:#6b7280;
+    --tech:#39ff7a;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--void);
+    color:var(--txt);
+    font-family:'Oswald','Arial Narrow',sans-serif;
+    overflow-x:hidden;
+  }
+  ::selection{background:var(--tech);color:#000;}
+
+  .grain{
+    position:fixed;inset:0;pointer-events:none;z-index:999;
+    opacity:0.05;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .scanline{
+    position:fixed;inset:0;pointer-events:none;z-index:998;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 3px);
+  }
+
+  nav{
+    position:fixed;top:0;left:0;right:0;z-index:200;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:22px 40px;
+    background:linear-gradient(to bottom, rgba(5,6,10,0.9), transparent);
+    backdrop-filter:blur(2px);
+    letter-spacing:0.25em;font-size:11px;
+  }
+  .logo{display:flex;align-items:center;gap:10px;color:#fff;font-weight:700;}
+  .logo .x{
+    width:26px;height:26px;border:1.5px solid #fff;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:13px;
+  }
+  .navlinks{display:flex;gap:32px;color:var(--txt-dim);}
+  .navlinks span{cursor:pointer;transition:color .3s;}
+  .navlinks span:hover{color:#fff;}
+  .navstatus{color:var(--tech);display:flex;align-items:center;gap:8px;}
+  .navstatus .dot{width:6px;height:6px;border-radius:50%;background:var(--tech);box-shadow:0 0 8px var(--tech);animation:pulse 2s infinite;}
+
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+  .hero{
+    height:100vh;position:relative;display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+  }
+  .hero-bg{
+    position:absolute;inset:0;
+    background:radial-gradient(ellipse 60% 50% at 50% 45%, rgba(57,255,122,0.08), transparent 70%);
+  }
+  .hero-rings{position:absolute;width:900px;height:900px;}
+  .hero-rings svg{width:100%;height:100%;}
+  .hero-content{position:relative;z-index:5;text-align:center;}
+  .hero-watch-panel{position:relative;z-index:5;display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:36px;}
+  .watch-status{font-size:11px;letter-spacing:0.45em;color:var(--txt-dim);text-transform:uppercase;}
+  .watch-status strong{color:#fff;}
+  .watch-dial{
+    position:relative;width:min(520px,76vw);aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+    border-radius:50%;background:
+      radial-gradient(circle at 30% 30%, rgba(255,255,255,0.06), rgba(255,255,255,0.03) 18%, rgba(0,0,0,0.15) 70%),
+      radial-gradient(circle at 50% 50%, rgba(57,255,122,0.06), transparent 62%);
+    border:1px solid rgba(255,255,255,0.08);
+    box-shadow:inset 0 0 40px rgba(57,255,122,0.06), 0 0 50px rgba(0,0,0,0.6);
+    animation:watchFloat 6s ease-in-out infinite;
+  }
+  .watch-dial::before,
+  .watch-dial::after{
+    content:'';position:absolute;border-radius:50%;border:1px solid rgba(57,255,122,0.18);
+  }
+  .watch-dial::before{width:82%;height:82%;}
+  .watch-dial::after{width:64%;height:64%;border-style:dashed;animation:spin 24s linear infinite;}
+  .watch-orbit{position:absolute;inset:0;}
+  .watch-chip{
+    position:absolute;left:50%;top:50%;width:62px;height:62px;border-radius:50%;
+    background:linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+    border:1px solid rgba(255,255,255,0.1);display:grid;place-items:center;
+    transform:translate(-50%, -50%) rotate(var(--angle)) translateY(-210px) rotate(calc(-1 * var(--angle)));
+    cursor:pointer;transition:transform .3s ease, border-color .3s ease, box-shadow .3s ease;
+    overflow:hidden;
+  }
+  .watch-chip img{width:100%;height:100%;object-fit:cover;filter:drop-shadow(0 0 10px rgba(255,255,255,0.08));}
+  .watch-chip:hover{transform:translate(-50%, -50%) rotate(var(--angle)) translateY(-220px) rotate(calc(-1 * var(--angle))) scale(1.08);}
+  .watch-chip.active{border-color:var(--accent, var(--tech));box-shadow:0 0 18px var(--accent, var(--tech));}
+  .watch-core{
+    position:relative;z-index:3;width:150px;height:150px;border-radius:50%;
+    display:grid;place-items:center;
+    padding:0;
+    background:radial-gradient(circle at 30% 30%, #0f1116, #05060a 70%);
+    border:1px solid rgba(57,255,122,0.4);color:#fff;
+    cursor:pointer;box-shadow:inset 0 0 30px rgba(57,255,122,0.06), 0 0 22px rgba(57,255,122,0.2);
+    transition:transform .25s ease, box-shadow .25s ease;
+  }
+  .watch-core img{
+    width:78%;height:78%;object-fit:contain;display:block;
+    filter:drop-shadow(0 0 14px rgba(57,255,122,0.18));
+  }
+  .watch-core:hover{transform:scale(1.04);box-shadow:inset 0 0 40px rgba(57,255,122,0.1), 0 0 36px rgba(57,255,122,0.35);}
+  .watch-core.syncing{animation:corePulse 1s infinite;}
+  .white-flash{
+    position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:999;
+    transition:opacity .15s ease;
+  }
+  .white-flash.show{opacity:1;animation:flashFade .65s ease-out forwards;}
+  @keyframes flashFade{0%{opacity:1;}70%{opacity:0.9;}100%{opacity:0;}}
+  @keyframes watchFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);} }
+  @keyframes corePulse{0%,100%{box-shadow:inset 0 0 30px rgba(57,255,122,0.06), 0 0 22px rgba(57,255,122,0.2);}50%{box-shadow:inset 0 0 50px rgba(57,255,122,0.18), 0 0 42px rgba(57,255,122,0.4);} }
+  .eyebrow .ln{width:40px;height:1px;background:var(--txt-dim);}
+  h1.title{
+    font-size:clamp(54px, 11vw, 150px);
+    font-weight:900;letter-spacing:0.02em;line-height:0.95;
+    color:#fff;
+    text-shadow:0 0 40px rgba(57,255,122,0.25);
+  }
+  h1.title .o{
+    display:inline-block;color:var(--tech);
+    text-shadow:0 0 30px var(--tech), 0 0 60px rgba(57,255,122,0.4);
+  }
+  .subtitle{
+    margin-top:22px;font-size:14px;color:var(--txt-dim);letter-spacing:0.15em;
+    max-width:520px;margin-left:auto;margin-right:auto;line-height:1.8;
+  }
+  .scrolldown{
+    position:absolute;bottom:40px;left:50%;transform:translateX(-50%);
+    display:flex;flex-direction:column;align-items:center;gap:10px;
+    color:var(--txt-dim);font-size:10px;letter-spacing:0.3em;z-index:5;
+  }
+  .scrolldown .bar{width:1px;height:40px;background:linear-gradient(to bottom, var(--tech), transparent);animation:scrollbar 2s infinite;}
+  @keyframes scrollbar{0%{transform:scaleY(0);transform-origin:top;}50%{transform:scaleY(1);transform-origin:top;}50.01%{transform-origin:bottom;}100%{transform:scaleY(0);transform-origin:bottom;}}
+
+  .corner{position:absolute;font-size:10px;color:var(--txt-dim);letter-spacing:0.2em;opacity:0.6;}
+  .corner.tl{top:100px;left:40px;}
+  .corner.tr{top:100px;right:40px;text-align:right;}
+  .corner.bl{bottom:30px;left:40px;}
+  .corner.br{bottom:30px;right:40px;}
+
+  .section-head{text-align:center;padding:90px 20px 50px;}
+  .section-head .eyebrow{justify-content:center;}
+  .section-head h2{font-size:clamp(28px,5vw,52px);color:#fff;letter-spacing:0.03em;font-weight:800;}
+
+  .archive-wrap{padding:0 40px 140px;max-width:1500px;margin:0 auto;}
+
+  .alien-card{
+    position:relative;min-height:100vh;display:grid;grid-template-columns:1fr 1fr;
+    align-items:center;border-top:1px solid var(--line);overflow:hidden;
+  }
+  .alien-card:last-child{border-bottom:1px solid var(--line);}
+  .alien-card .field{
+    position:absolute;inset:0;opacity:0;transition:opacity .8s ease;
+    background:radial-gradient(ellipse 55% 60% at var(--fx,70%) 50%, var(--glow), transparent 65%);
+  }
+  .alien-card.in-view .field{opacity:1;}
+
+  .alien-info{position:relative;z-index:5;padding:60px 0 60px 70px;}
+  .alien-info .designation{
+    font-size:11px;color:var(--txt-dim);letter-spacing:0.3em;margin-bottom:16px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .alien-info .designation .ico{
+    width:30px;height:30px;border:1px solid var(--ac);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;color:var(--ac);font-size:13px;
+  }
+  .alien-info h3{
+    font-size:clamp(8px,7vw,70px);font-weight:900;color:#fff;letter-spacing:0.01em;
+    line-height:0.95;opacity:0;transform:translateX(-40px);transition:all 1s cubic-bezier(.2,.8,.2,1);
+  }
+  .alien-card.in-view .alien-info h3{opacity:1;transform:translateX(0);}
+  .alien-info h3 .glitch-letter{display:inline-block;color:var(--ac);text-shadow:0 0 25px var(--ac);}
+
+  .alien-info .tagline{
+    margin-top:14px;font-size:14px;color:var(--ac);letter-spacing:0.1em;font-style:italic;
+    opacity:0;transition:opacity 1s ease .3s;
+  }
+  .alien-card.in-view .tagline{opacity:1;}
+
+  .statline{
+    margin-top:34px;display:flex;flex-direction:column;gap:10px;
+    font-size:11px;letter-spacing:0.15em;color:var(--txt-dim);
+    border-left:1px solid var(--line);padding-left:18px;
+    opacity:0;transition:opacity 1s ease .45s;
+  }
+  .alien-card.in-view .statline{opacity:1;}
+  .statline div span.val{color:var(--txt);}
+
+  .powerbar{margin-top:30px;display:flex;flex-direction:column;gap:8px;max-width:280px;opacity:0;transition:opacity 1s ease .6s;}
+  .alien-card.in-view .powerbar{opacity:1;}
+  .powerbar .row{display:flex;justify-content:space-between;font-size:10px;color:var(--txt-dim);letter-spacing:0.15em;margin-bottom:4px;}
+  .powerbar .track{height:4px;background:rgba(255,255,255,0.08);position:relative;overflow:hidden;}
+  .powerbar .fill{position:absolute;left:0;top:0;height:100%;width:0;background:var(--ac);box-shadow:0 0 10px var(--ac);transition:width 1.4s cubic-bezier(.2,.8,.2,1) .7s;}
+  .alien-card.in-view .powerbar .fill{width:var(--pw);}
+
+  .alien-desc{margin-top:28px;font-size:13px;line-height:1.9;color:var(--txt-dim);max-width:420px;opacity:0;transition:opacity 1s ease .8s;}
+  .alien-card.in-view .alien-desc{opacity:1;}
+
+  .alien-visual{position:relative;height:100%;display:flex;align-items:center;justify-content:center;z-index:3;}
+  .alien-visual .ring{position:absolute;width:480px;height:480px;border-radius:50%;border:1px solid var(--ac);opacity:0.35;}
+  .alien-visual .ring.r2{width:380px;height:380px;opacity:0.2;animation:spin 30s linear infinite;}
+  .alien-visual .ring.r3{width:560px;height:560px;opacity:0.12;animation:spin 50s linear infinite reverse;}
+  @keyframes spin{from{transform:rotate(0);}to{transform:rotate(360deg);}}
+
+  .silhouette{
+    position:relative;width:340px;height:340px;z-index:4;
+    object-fit:contain;
+    filter:drop-shadow(0 0 40px var(--ac));
+    opacity:0;transform:scale(0.85);transition:all 1.1s cubic-bezier(.2,.8,.2,1) .2s;
+  }
+  .alien-card.in-view .silhouette{opacity:1;transform:scale(1);}
+  .alien-card.selected-alien{box-shadow:inset 0 0 0 1px var(--ac), 0 0 32px var(--glow);}
+
+  .scanbeam{position:absolute;top:0;bottom:0;width:2px;background:linear-gradient(to bottom, transparent, var(--ac), transparent);opacity:0;left:50%;}
+  .alien-card.in-view .scanbeam{animation:scan 2.4s ease-in-out 1;opacity:1;}
+  @keyframes scan{0%{left:10%;opacity:0;}10%{opacity:0.8;}90%{opacity:0.8;}100%{left:90%;opacity:0;}}
+
+  .hexcode{position:absolute;font-size:9px;color:var(--ac);opacity:0.5;letter-spacing:0.1em;}
+  .axislabel{position:absolute;font-size:9px;color:var(--txt-dim);letter-spacing:0.2em;}
+
+  .bignum{position:absolute;font-size:280px;font-weight:900;color:rgba(255,255,255,0.02);line-height:1;z-index:1;letter-spacing:-0.05em;pointer-events:none;}
+
+  footer{padding:120px 40px 60px;text-align:center;position:relative;border-top:1px solid var(--line);}
+  footer h2{font-size:clamp(28px,6vw,60px);color:#fff;font-weight:900;}
+  footer h2 span{color:var(--tech);text-shadow:0 0 30px var(--tech);}
+  footer p{margin-top:18px;color:var(--txt-dim);font-size:13px;letter-spacing:0.1em;}
+  .cta-btn{
+    margin-top:40px;display:inline-flex;align-items:center;gap:12px;
+    padding:16px 36px;border:1px solid var(--tech);color:var(--tech);
+    letter-spacing:0.25em;font-size:12px;cursor:pointer;background:transparent;
+    transition:all .35s ease;position:relative;overflow:hidden;
+  }
+  .cta-btn:hover{background:var(--tech);color:#000;box-shadow:0 0 40px var(--tech);}
+  .footbottom{margin-top:90px;display:flex;justify-content:space-between;font-size:10px;color:var(--txt-dim);letter-spacing:0.2em;flex-wrap:wrap;gap:10px;}
+
+  @media (max-width: 900px){
+    .alien-card{grid-template-columns:1fr;}
+    .alien-info{padding:50px 30px 20px;}
+    .alien-visual{height:380px;}
+    .silhouette{width:240px;height:240px;}
+    .hero-rings{width:600px;height:600px;}
+    .corner.tl,.corner.tr{top:70px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important;transition-duration:0.01ms !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+<div class="scanline"></div>
+<div class="white-flash" id="whiteFlash"></div>
+
+<nav>
+  <div class="logo"><div class="x">✕</div> OMNITRIX</div>
+  <div class="navlinks">
+    <span onclick="document.getElementById('archive').scrollIntoView({behavior:'smooth'})">DNA ARCHIVE</span>
+    <span onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">ACCESS</span>
+  </div>
+  <div class="navstatus"><div class="dot"></div> SCANNER ONLINE</div>
+</nav>
+
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="corner tl">SYS / BEN_10000<br>REC.MODE: ACTIVE</div>
+  <div class="corner tr">X_05.2 &nbsp; Y_11.0<br>Z_03.7</div>
+  <div class="hero-rings" id="heroRings"></div>
+  <div class="hero-content">
+    <div class="eyebrow"><span class="ln"></span>WATCH-BOUND DNA COMPUTER<span class="ln"></span></div>
+    <h1 class="title">OMNITRIX <span class="o">X</span></h1>
+    <p class="subtitle">A living archive of every alien form catalogued, sequenced and ready for transformation. Ten million DNA samples. One wristband.</p>
+    <div class="hero-watch-panel">
+      <div class="watch-status" id="watchStatus">SELECT AN ALIEN</div>
+      <div class="watch-dial">
+        <div class="watch-orbit" id="watchOrbit"></div>
+        <button class="watch-core" id="watchCore" aria-label="Watch"><img src="assets/watch.webp" alt="Watch"></button>
+      </div>
+    </div>
+  </div>
+  <div class="scrolldown"><div class="bar"></div>SCROLL TO SCAN</div>
+  <div class="corner bl">DEN_10</div>
+  <div class="corner br">アルティメット</div>
+</section>
+
+<div id="archive">
+<div class="section-head">
+  <div class="eyebrow"><span class="ln"></span>SELECT SPECIMEN<span class="ln"></span></div>
+  <h2>DNA SAMPLE INDEX</h2>
+</div>
+<div class="archive-wrap" id="cards"></div>
+</div>
+
+<footer id="contact">
+  <div class="eyebrow" style="justify-content:center;"><span class="ln"></span>RECALIBRATION REQUIRED<span class="ln"></span></div>
+  <h2>SLAP THE <span>DIAL</span>. TRANSFORM.</h2>
+  <p>NEW SPECIMENS ADDED EVERY SYNC CYCLE — OMNITRIX FIRMWARE V10.0.10</p>
+  <button class="cta-btn" onclick="this.innerHTML='ACCESS GRANTED ✕'">OPEN ARCHIVE ACCESS</button>
+  <div class="footbottom">
+    <span>© AZMUTH LABS // GALVAN PRIME</span>
+    <span>OMNITRIX_ACTIVE ● DNA SYNC 100%</span>
+    <span>ADVIC_ARTS</span>
+  </div>
+</footer>
+
+<script>
+const ALIENS = [
+  { id:'01', name:'HEATBLAST', species:'PYRONITE', home:'PYROS', class:'NRG / FIRE CLASS',
+    power:92, accent:'#ff5a1f', glow:'rgba(255,90,31,0.18)',
+    image:'assets/1.png',
+    tag:'"Burn first, ask questions never."',
+    desc:'A living flame encased in molten rock plating. Generates and hurls superheated plasma; immune to heat, vulnerable only when the fire goes out.',
+    path:`<path d="M170 90 L150 150 L190 150 Z M120 160 C90 180 80 230 100 270 C90 290 60 300 40 330 C70 340 110 320 130 290 C160 310 200 300 210 260 C230 270 260 250 250 220 C270 200 260 170 230 165 C220 140 190 130 170 145 C150 130 130 140 120 160 Z" fill="currentColor" opacity="0.9"/><circle cx="155" cy="195" r="10" fill="#000"/><circle cx="195" cy="195" r="10" fill="#000"/>` },
+  { id:'02', name:'XLR8', species:'KINECELERAN', home:'KINET', class:'VELOCITY CLASS',
+    power:88, accent:'#ffe14d', glow:'rgba(255,225,77,0.16)',
+    image:'assets/2.png',
+    tag:'"Already finished. Catch up."',
+    desc:'A raptor-shaped speedster with a low-friction carapace. Capable of running at hypersonic velocity, processing the world in slow motion.',
+    path:`<path d="M60 220 Q40 180 80 150 Q60 120 100 100 Q140 70 180 90 Q220 80 240 120 Q270 130 260 170 Q280 200 250 230 Q260 270 220 280 L210 250 Q180 270 150 250 L140 280 Q110 270 110 240 Q80 250 60 220 Z" fill="currentColor" opacity="0.9"/><circle cx="185" cy="135" r="9" fill="#000"/>` },
+  { id:'03', name:'FOUR ARMS', species:'TETRAMAND', home:'KTARI', class:'BRUTE STRENGTH',
+    power:96, accent:'#ff1f3a', glow:'rgba(255,31,58,0.18)',
+    image:'assets/3.png',
+    tag:'"Four fists. One argument."',
+    desc:'A red-skinned colossus from a high-gravity world, built for raw force. Four powerful arms allow simultaneous strikes that can level concrete.',
+    path:`<path d="M150 60 Q190 60 195 100 L195 140 L240 100 L260 130 L210 175 L260 200 L245 235 L195 205 L195 260 Q195 300 150 300 Q105 300 105 260 L105 205 L55 235 L40 200 L90 175 L40 130 L60 100 L105 140 L105 100 Q110 60 150 60 Z" fill="currentColor" opacity="0.9"/><circle cx="135" cy="115" r="9" fill="#000"/><circle cx="165" cy="115" r="9" fill="#000"/>` },
+  { id:'04', name:'DIAMONDHEAD', species:'PETROSAPIEN', home:'PETROPIA', class:'MINERALOID',
+    power:90, accent:'#2be8d9', glow:'rgba(43,232,217,0.16)',
+    image:'assets/4.png',
+    tag:'"Sharper than your argument."',
+    desc:'A crystalline being of living silicon. Can grow and launch razor shards from any point on the body, and regenerate from shattered fragments.',
+    path:`<path d="M150 50 L190 100 L150 130 L110 100 Z M90 120 L150 150 L150 220 L70 250 L40 180 Z M210 120 L150 150 L150 220 L230 250 L260 180 Z M110 240 L150 230 L190 240 L170 300 L130 300 Z" fill="currentColor" opacity="0.9"/><circle cx="135" cy="105" r="7" fill="#000"/><circle cx="165" cy="105" r="7" fill="#000"/>` },
+  { id:'05', name:'UPGRADE', species:'GALVANIC MECHAMORPH', home:'GALVAN B', class:'TECHNO-ORGANIC',
+    power:85, accent:'#39ff7a', glow:'rgba(57,255,122,0.18)',
+    image:'assets/5.png',
+    tag:'"I am the upgrade you did not install."',
+    desc:'A liquid-metal nanomachine entity capable of merging with and controlling technology, reshaping its body to interface with any mechanism.',
+    path:`<path d="M50 180 Q80 120 140 130 Q170 100 210 120 Q260 110 270 150 Q300 170 270 200 Q280 230 240 240 Q220 270 180 250 Q140 270 120 240 Q70 240 50 180 Z" fill="currentColor" opacity="0.9"/><circle cx="200" cy="160" r="11" fill="#000"/>` },
+  { id:'06', name:'WILDMUTT', species:'VULPIMANCER', home:'VULPIN', class:'PREDATOR CLASS',
+    power:87, accent:'#a259ff', glow:'rgba(162,89,255,0.16)',
+    image:'assets/6.png',
+    tag:'"It cannot see you. It does not need to."',
+    desc:'A quadrupedal predator devoid of eyes, hunting through hyper-acute smell, sound, and heat sensing. Razor spikes line its back and tail.',
+    path:`<path d="M40 220 Q40 170 90 160 L110 120 L130 160 L170 160 L190 120 L210 160 Q260 170 260 220 Q260 260 210 270 L210 250 Q150 265 90 250 L90 270 Q40 260 40 220 Z" fill="currentColor" opacity="0.9"/>` },
+  { id:'07', name:'ECHO ECHO', species:'SONOROSIAN', home:'SONOROSIA', class:'SONIC / REPLICATION',
+    power:80, accent:'#5ad1ff', glow:'rgba(90,209,255,0.16)',
+    image:'assets/7.png',
+    tag:'"One voice. Infinite copies."',
+    desc:'A small white sound-based organism that can split into many independent duplicates and emit devastating ultrasonic shockwaves.',
+    path:`<path d="M110 60 L140 60 L145 100 L155 100 L160 60 L190 60 L185 110 Q230 130 230 180 Q230 230 180 250 L180 230 Q200 210 195 185 Q185 155 150 155 Q115 155 105 185 Q100 210 120 230 L120 250 Q70 230 70 180 Q70 130 115 110 Z" fill="currentColor" opacity="0.9"/><circle cx="135" cy="185" r="8" fill="#000"/><circle cx="165" cy="185" r="8" fill="#000"/>` },
+  { id:'08', name:'CHROMASTONE', species:'CRYSTALSAPIEN', home:'KINCELED', class:'ENERGY ABSORPTION',
+    power:91, accent:'#ff7de8', glow:'rgba(255,125,232,0.16)',
+    image:'assets/8.png',
+    tag:'"Hit me with your best photon."',
+    desc:'A faceted crystal being that absorbs any form of energy directed at it and redirects it as concentrated beams of light.',
+    path:`<path d="M150 50 L185 90 L170 140 L210 160 L195 210 L150 230 L105 210 L90 160 L130 140 L115 90 Z" fill="currentColor" opacity="0.9"/><circle cx="135" cy="120" r="8" fill="#000"/><circle cx="165" cy="120" r="8" fill="#000"/>` },
+  { id:'09', name:'GOOP', species:'POLYMORPH', home:'VIRIDIUM 7', class:'AMORPHOUS / TOXIC',
+    power:78, accent:'#9bff3a', glow:'rgba(155,255,58,0.16)',
+    image:'assets/9.png',
+    tag:'"Slip through. Dissolve everything else."',
+    desc:'An unstable mass of corrosive green polymer held in a containment suit. Can flatten, stretch, and ooze through the narrowest gaps.',
+    path:`<path d="M90 140 Q70 180 100 210 Q80 240 110 260 Q150 280 190 260 Q220 240 200 210 Q230 180 210 140 Q230 110 195 100 Q180 80 150 90 Q120 80 105 100 Q70 110 90 140 Z" fill="currentColor" opacity="0.85"/><circle cx="135" cy="160" r="8" fill="#000"/><circle cx="165" cy="160" r="8" fill="#000"/>` },
+  { id:'10', name:'CANNONBOLT', species:'ARBURIAN PELAROTA', home:'ARBURIA', class:'ARMORED IMPACT',
+    power:84, accent:'#ffb627', glow:'rgba(255,182,39,0.16)',
+    image:'assets/10.png',
+    tag:'"Roll. Wreck. Repeat."',
+    desc:'An armored sphere-form alien protected by a thick exoskeleton shell, able to curl up and barrel through obstacles at high speed.',
+    path:`<circle cx="150" cy="180" r="110" fill="currentColor" opacity="0.9"/><circle cx="125" cy="160" r="10" fill="#000"/><circle cx="175" cy="160" r="10" fill="#000"/><path d="M150 70 L150 50 M90 90 L75 70 M210 90 L225 70" stroke="currentColor" stroke-width="6"/>` }
+];
+
+const heroRings = document.getElementById('heroRings');
+heroRings.innerHTML = `
+<svg viewBox="0 0 900 900">
+  <circle cx="450" cy="590" r="260" stroke="#39ff7a" stroke-width="2" fill="none" opacity="0.5"/>
+  <circle cx="450" cy="590" r="320" stroke="#39ff7a" stroke-width="1" fill="none" opacity="0.25"/>
+  <circle cx="450" cy="550" r="380" stroke="#39ff7a" stroke-width="1" fill="none" opacity="0.12" stroke-dasharray="4 10"/>
+  <path d="M450 250 L450 190 M650 450 L710 450 M450 650 L450 710 M250 450 L190 450" stroke="#39ff7a" stroke-width="2" opacity="0.4"/>
+</svg>`;
+
+const cardsWrap = document.getElementById('cards');
+const watchOrbit = document.getElementById('watchOrbit');
+const watchCore = document.getElementById('watchCore');
+const watchStatus = document.getElementById('watchStatus');
+const whiteFlash = document.getElementById('whiteFlash');
+let selectedAlienIndex = 0;
+let flashTimeout;
+
+function setSelectedAlien(index){
+  selectedAlienIndex = index;
+  const alien = ALIENS[index];
+  document.documentElement.style.setProperty('--accent', alien.accent);
+  document.querySelectorAll('.watch-chip').forEach((chip, chipIndex)=>{
+    chip.classList.toggle('active', chipIndex === index);
+  });
+  watchStatus.innerHTML = `SYNC READY // <strong>${alien.name}</strong>`;
+  document.querySelectorAll('.alien-card').forEach((card, cardIndex)=>{
+    card.classList.toggle('selected-alien', cardIndex === index);
+  });
+}
+
+function triggerWatchSequence(){
+  const alien = ALIENS[selectedAlienIndex];
+  if (flashTimeout) clearTimeout(flashTimeout);
+  watchCore.classList.add('syncing');
+  watchStatus.innerHTML = `SYNCING WITH <strong>${alien.name}</strong>`;
+
+  flashTimeout = setTimeout(()=>{
+    watchCore.classList.remove('syncing');
+    whiteFlash.classList.add('show');
+    setTimeout(()=>{
+      whiteFlash.classList.remove('show');
+      const card = cardsWrap.children[selectedAlienIndex];
+      if (card) {
+        card.scrollIntoView({ behavior:'smooth', block:'center' });
+      }
+      watchStatus.innerHTML = `TRANSFORM READY // <strong>${alien.name}</strong>`;
+    }, 650);
+  }, 3000);
+}
+
+ALIENS.forEach((a, i)=>{
+  const card = document.createElement('div');
+  card.className = 'alien-card';
+  card.dataset.index = i;
+  card.style.setProperty('--ac', a.accent);
+  card.style.setProperty('--glow', a.glow);
+  card.style.setProperty('--pw', a.power + '%');
+  card.style.setProperty('--fx', i % 2 === 0 ? '78%' : '22%');
+
+  const infoSide = `
+    <div class="field"></div>
+    <div class="alien-info">
+      <div class="designation"><div class="ico">✕</div> OMNITRIX // DNA_SAMPLE_${a.id}</div>
+      <h3>${a.name.split('').map((c,ci)=> ci===0 ? `<span class="glitch-letter">${c}</span>` : c).join('')}</h3>
+      <div class="tagline">${a.tag}</div>
+      <div class="statline">
+        <div>SPECIES &nbsp;//&nbsp; <span class="val">${a.species}</span></div>
+        <div>HOMEWORLD &nbsp;//&nbsp; <span class="val">${a.home}</span></div>
+        <div>CLASS &nbsp;//&nbsp; <span class="val">${a.class}</span></div>
+      </div>
+      <div class="powerbar">
+        <div class="row"><span>POWER LEVEL</span><span>${a.power}/100</span></div>
+        <div class="track"><div class="fill"></div></div>
+      </div>
+      <p class="alien-desc">${a.desc}</p>
+    </div>`;
+
+  const visualSide = `
+    <div class="alien-visual">
+      <div class="bignum">${a.id}</div>
+      <div class="ring r3"></div>
+      <div class="ring r2"></div>
+      <div class="ring"></div>
+      <div class="scanbeam"></div>
+      <img class="silhouette" src="${a.image}" alt="${a.name}">
+      <div class="hexcode" style="top:18%;left:8%;">X_0${i}.${(i*3)%9} &nbsp; Y_1${i%5}.${i} &nbsp; Z_0${(i*2)%9}</div>
+      <div class="axislabel" style="bottom:14%;right:10%;">OMNITRIX_ACTIVE ●</div>
+    </div>`;
+
+  card.innerHTML = i % 2 === 0 ? infoSide + visualSide : visualSide + infoSide;
+  cardsWrap.appendChild(card);
+
+  const chip = document.createElement('button');
+  chip.type = 'button';
+  chip.className = 'watch-chip';
+  chip.style.setProperty('--angle', `${(360 / ALIENS.length) * i}deg`);
+  chip.setAttribute('aria-label', a.name);
+  chip.innerHTML = `<img src="${a.image}" alt="${a.name}">`;
+  chip.addEventListener('click', ()=>{
+    setSelectedAlien(i);
+    triggerWatchSequence();
+  });
+  watchOrbit.appendChild(chip);
+});
+
+watchCore.addEventListener('click', ()=>{
+  if (selectedAlienIndex !== null) triggerWatchSequence();
+});
+
+setSelectedAlien(0);
+
+const obs = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){ e.target.classList.add('in-view'); }
+  });
+},{threshold:0.32});
+document.querySelectorAll('.alien-card').forEach(c=>obs.observe(c));
+</script>
+</body>
+</html>
